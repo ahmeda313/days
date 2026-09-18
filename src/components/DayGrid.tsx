@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingBottom: 40,
+    paddingBottom: 20, // Reduced from 40 to make room for carousel
     alignItems: 'center',
   },
   gridContainer: {

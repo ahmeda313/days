@@ -1,13 +1,14 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, StyleSheet, Text } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { FAB, ActivityIndicator, useTheme } from 'react-native-paper';
+import { ActivityIndicator, useTheme, FAB } from 'react-native-paper';
 import { Event } from '../models/Event';
 import { loadEvents, deleteEvent } from '../storage/events';
 import { generateGrid } from '../utils/dateUtils';
 import { EventCarousel } from '../components/EventCarousel';
 import { DayGrid } from '../components/DayGrid';
 import { AddEventModal } from '../components/AddEventModal';
+import { colors } from '../../assets/neon-palette';
 
 export const HomeScreen: React.FC = () => {
   const theme = useTheme();
@@ -63,6 +64,13 @@ export const HomeScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Events</Text>
+          <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
+            <Text style={styles.addButtonText}>+</Text>
+          </TouchableOpacity>
+        </View>
+        
         {loading ? (
           <ActivityIndicator animating={true} size="large" color={theme.colors.primary} />
         ) : (
@@ -77,11 +85,6 @@ export const HomeScreen: React.FC = () => {
             />
           </>
         )}
-        <FAB
-          style={[styles.fab]}
-          icon={() => <Text style={{ color: '#000', fontSize: 38, fontWeight: 'bold', lineHeight: 25, marginInlineStart:2 }}>+</Text>}
-          onPress={() => setModalVisible(true)}
-        />
         <AddEventModal
           visible={modalVisible}
           onDismiss={() => setModalVisible(false)}
@@ -98,14 +101,34 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
   },
   container: {
-    flex: 0.8,
+    flex: 1,
     paddingHorizontal: 8,
+    paddingBottom: 100, // Space for bottom navigation
   },
-  fab: {
-    position: 'absolute',
-    backgroundColor: '#fff',
-    margin: 16,
-    right: 0,
-    bottom: -60,
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingTop: 8,
+  },
+  headerTitle: {
+    color: '#fff',
+    fontSize: 28,
+    fontWeight: 'bold',
+  },
+  addButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.neonGreen,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addButtonText: {
+    color: '#000',
+    fontSize: 28,
+    fontWeight: 'bold',
+    lineHeight: 28,
   },
 });
