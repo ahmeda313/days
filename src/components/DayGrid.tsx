@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Dimensions, StyleSheet, ScrollView, Text } from 'react-native';
+import React, { useState } from 'react';
+import { View, Dimensions, StyleSheet, ScrollView, Text, TouchableOpacity, Pressable } from 'react-native';
 import { BoxInfo } from '../utils/dateUtils';
 import { colors } from '../../assets/neon-palette';
 
@@ -63,7 +63,14 @@ const groupBoxesByMonth = (boxes: BoxInfo[]): MonthData[] => {
   return result;
 };
 
-const renderMonthGrid = (monthData: MonthData, boxSize: number, dayMargin: number, dayGap: number) => {
+const renderMonthGrid = (
+  monthData: MonthData,
+  boxSize: number,
+  dayMargin: number,
+  dayGap: number,
+  selectedBox: BoxInfo | null,
+  onSelectBox: (box: BoxInfo) => void
+) => {
   const { boxes, shortName, year, monthIndex } = monthData;
 
   const dayMap = new Map<number, BoxInfo>();
@@ -106,6 +113,11 @@ const renderMonthGrid = (monthData: MonthData, boxSize: number, dayMargin: numbe
     rows.push(currentRow);
   }
 
+  const isSelected = (box: BoxInfo): boolean => {
+    return selectedBox !== null && 
+           box.date.getTime() === selectedBox.date.getTime();
+  };
+
   return (
     <View key={`${year}-${monthIndex}`} style={styles.monthContainer}>
       <Text style={styles.monthLabel}>{shortName}</Text>
@@ -132,20 +144,30 @@ const renderMonthGrid = (monthData: MonthData, boxSize: number, dayMargin: numbe
               if (box.status === 'future') background = colors.neonGreen;
               else if (box.status === 'event') background = colors.neonRed;
 
+              const boxIsSelected = isSelected(box);
+
               return (
-                <View
+                <TouchableOpacity
                   key={`${rowIndex}-${colIndex}`}
-                  style={[
-                    styles.dayBox,
-                    {
-                      width: boxSize,
-                      height: boxSize,
-                      backgroundColor: background,
-                      marginHorizontal: dayGap,
-                      marginVertical: dayMargin,
-                    }
-                  ]}
-                />
+                  onPress={() => onSelectBox(box)}
+                  activeOpacity={0.7}
+                >
+                  <View
+                    style={[
+                      styles.dayBox,
+                      styles.dayBoxSelected,
+                      {
+                        width: boxSize,
+                        height: boxSize,
+                        backgroundColor: background,
+                        marginHorizontal: dayGap,
+                        marginVertical: dayMargin,
+                        borderWidth: boxIsSelected ? 2 : 0,
+                        borderColor: boxIsSelected ? '#fff' : 'transparent',
+                      }
+                    ]}
+                  />
+                </TouchableOpacity>
               );
             })}
           </View>
@@ -157,6 +179,25 @@ const renderMonthGrid = (monthData: MonthData, boxSize: number, dayMargin: numbe
 
 export const DayGrid: React.FC<DayGridProps> = ({ boxes }) => {
   const { width, height } = Dimensions.get('window');
+  const [selectedBox, setSelectedBox] = useState<BoxInfo | null>(null);
+
+  const handleSelectBox = (box: BoxInfo) => {
+    setSelectedBox(box);
+  };
+
+  const handleClearSelection = () => {
+    setSelectedBox(null);
+  };
+
+  const formatDate = (date: Date): string => {
+    const options: Intl.DateTimeFormatOptions = { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      weekday: 'long'
+    };
+    return date.toLocaleDateString('en-US', options);
+  };
 
   // Layout: 3 columns, as many rows as needed
   const monthsPerRow = 3;
@@ -190,7 +231,7 @@ export const DayGrid: React.FC<DayGridProps> = ({ boxes }) => {
     return monthRows.map((rowMonths, rowIndex) => (
       <View key={rowIndex} style={[styles.monthRow, { marginBottom: rowIndex < monthRows.length - 1 ? monthVPadding : 0 }]}>
         {rowMonths.map(month =>
-          renderMonthGrid(month, finalBoxSize, dayMargin, dayGap)
+          renderMonthGrid(month, finalBoxSize, dayMargin, dayGap, selectedBox, handleSelectBox)
         )}
         {/* Fill empty slots if less than 3 months in last row */}
         {rowMonths.length < monthsPerRow &&
@@ -203,23 +244,34 @@ export const DayGrid: React.FC<DayGridProps> = ({ boxes }) => {
 
   // Always use ScrollView for vertical scrolling when there are many months
   const content = (
-    <View style={styles.gridContainer}>
+    <Pressable style={styles.gridContainer} onPress={handleClearSelection}>
       {renderMonthRows()}
-    </View>
+    </Pressable>
   );
 
   return (
-    <ScrollView
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.scrollContent}
-      style={{ flex: 1 }}
-    >
-      {content}
-    </ScrollView>
+    <View style={styles.container}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        style={{ flex: 1 }}
+      >
+        {content}
+      </ScrollView>
+      {selectedBox && (
+        <View style={styles.dateOverlay}>
+          <Text style={styles.dateOverlayText}>{formatDate(selectedBox.date)}</Text>
+        </View>
+      )}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    position: 'relative',
+  },
   scrollContent: {
     paddingHorizontal: 16,
     paddingBottom: 40,
@@ -258,5 +310,26 @@ const styles = StyleSheet.create({
   },
   dayBox: {
     borderRadius: 1,
+  },
+  dayBoxSelected: {
+    borderRadius: 2,
+  },
+  dateOverlay: {
+    position: 'absolute',
+    bottom: 100,
+    left: 16,
+    right: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.neonGreen,
+  },
+  dateOverlayText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
