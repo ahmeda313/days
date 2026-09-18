@@ -1,21 +1,19 @@
 import { Event } from '../models/Event';
-// @ts-ignore - expo-file-system types not in TS config but module exists at runtime
-import * as FileSystem from 'expo-file-system';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const STORAGE_FILE = `${FileSystem.documentDirectory}events.json`;
+const STORAGE_KEY = '@events';
 
 // Simple ID generator without crypto dependency
 const generateId = (): string => {
   return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
 };
 
-/** Load all saved events from file system */
+/** Load all saved events from AsyncStorage */
 export const loadEvents = async (): Promise<Event[]> => {
   try {
-    const fileInfo = await FileSystem.getInfoAsync(STORAGE_FILE);
-    if (fileInfo.exists) {
-      const content = await FileSystem.readAsStringAsync(STORAGE_FILE);
-      const parsed = JSON.parse(content);
+    const jsonValue = await AsyncStorage.getItem(STORAGE_KEY);
+    if (jsonValue !== null) {
+      const parsed = JSON.parse(jsonValue);
       if (parsed.length > 0) {
         return parsed;
       }
@@ -36,10 +34,10 @@ export const loadEvents = async (): Promise<Event[]> => {
   }
 };
 
-/** Save all events to file system */
+/** Save all events to AsyncStorage */
 const saveEvents = async (events: Event[]): Promise<void> => {
   try {
-    await FileSystem.writeAsStringAsync(STORAGE_FILE, JSON.stringify(events));
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(events));
   } catch (e) {
     console.error('Failed to save events:', e);
   }

@@ -44,8 +44,14 @@ export const HomeScreen: React.FC = () => {
     await deleteEvent(id);
     // Refresh list after deletion
     await fetchEvents();
+    // If the deleted event was selected, select the first available event
     if (selectedEventId === id) {
-      setSelectedEventId(null);
+      const loaded = await loadEvents();
+      if (loaded.length > 0) {
+        setSelectedEventId(loaded[0].id);
+      } else {
+        setSelectedEventId(null);
+      }
     }
   };
 

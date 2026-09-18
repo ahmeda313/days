@@ -30,21 +30,30 @@ export const EventCarousel: React.FC<EventCarouselProps> = ({
   const cardGap = 24; // gap between cards
   const snapInterval = cardWidth + cardGap;
 
-  // Find initial active index
+  // Find initial active index - only scroll when events list changes significantly
   useEffect(() => {
     const index = events.findIndex(e => e.id === selectedEventId);
     if (index !== -1) {
       setActiveIndex(index);
       flatListRef.current?.scrollToIndex({ index, animated: false });
     }
-  }, [events, selectedEventId]);
+  }, [events.length]); // Only when events array length changes (add/delete)
+
+  // Update active index when selected event changes (without scrolling)
+  useEffect(() => {
+    const index = events.findIndex(e => e.id === selectedEventId);
+    if (index !== -1 && index !== activeIndex) {
+      setActiveIndex(index);
+    }
+  }, [selectedEventId]);
 
   const handleMomentumScrollEnd = (e: any) => {
     const offsetX = e.nativeEvent.contentOffset.x;
     const index = Math.round(offsetX / snapInterval);
-    if (index >= 0 && index < events.length && index !== activeIndex) {
-      setActiveIndex(index);
-      onScrollToIndex?.(index);
+    const clampedIndex = Math.max(0, Math.min(index, events.length - 1));
+    if (clampedIndex !== activeIndex) {
+      setActiveIndex(clampedIndex);
+      onScrollToIndex?.(clampedIndex);
     }
   };
 
@@ -112,7 +121,6 @@ export const EventCarousel: React.FC<EventCarouselProps> = ({
         snapToAlignment="center"
         decelerationRate="fast"
         onMomentumScrollEnd={handleMomentumScrollEnd}
-        scrollEventThrottle={16}
         contentContainerStyle={styles.listContainer}
         initialScrollIndex={activeIndex}
       />
